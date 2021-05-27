@@ -30,8 +30,7 @@ $password = $_GET["password"];
 
 $result = array();
 
-if ((strcmp($username, "Helen") == 0 && strcmp($password, "helen0226") == 0) ||
-    (strcmp($username, "guest") == 0 && strcmp($password, "guest") == 0)) {
+if ((strcmp($username, "guest") == 0 && strcmp($password, "guest") == 0)) {
     $result['code'] = 200;
     $result['data']['token'] = strtoupper(make_randstr(24));
 } else {
