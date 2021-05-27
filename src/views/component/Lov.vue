@@ -1,0 +1,148 @@
+<template>
+    <v-layout>
+        <v-layout class="d-flex flex-row align-center">
+            <v-btn tile text color="blue darken-4" @click="showLovDialog" style="text-align: left">
+                {{showName}}
+            </v-btn>
+            <v-btn x-small icon @click="clearValue" v-if="value!=null&&value!=undefined">
+                <v-icon color="error">mdi-close-circle</v-icon>
+            </v-btn>
+        </v-layout>
+        <v-dialog v-model="showLov" max-width="800">
+            <v-card>
+                <v-toolbar flat color="white">
+                    <v-text-field
+                            placeholder="输入关键字查询"
+                            prepend-inner-icon="search"
+                            hide-details
+                            clearable
+                            class="ml-3"
+                            v-model="searchText"
+                            @keydown="queryTableData"
+                    ></v-text-field>
+                </v-toolbar>
+                <v-card-text>
+                    <v-data-table
+                            v-model="headerSelected"
+                            :headers="headers"
+                            :items="tableItems"
+                            no-data-text="无数据"
+                            no-results-text="未查询到数据"
+                            class="elevation-1"
+                            :loading="queryLoading"
+                            @click:row="selectedRow"
+                            :items-per-page="8"
+                            :page.sync="currentPage"
+                            :server-items-length="rows.total"
+                            @update:options="pageQuery"
+                            loading-text="正在查询数据...."
+                            fixed-header
+                            :footer-props="lovFooter"
+                    ></v-data-table>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="primary" :loading="actionLoading" @click="okAction">确定</v-btn>
+                    <v-btn color="primary" outlined @click="cancelAction">返回</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+    </v-layout>
+</template>
+<script>
+    import ApmMinxins from "@/minxins/ApmMinxins";
+    import QueryPageMinxins from "@/minxins/QueryPageMinxins";
+
+    export default {
+        name: "apm-lov",
+        props: [
+            "value",
+            "headers",
+            "items",
+            "api",
+            "tip",
+            "params",
+            "idAttr",
+            "nameAttr",
+            "rowData",
+            "tag",
+            "initDisplayName",
+            "label"
+        ],
+        created() {
+            this.rowValue = this.rowData || {};
+            if (this.items) {
+                this.tableItems = this.items;
+            }
+        },
+        watch: {
+            initDisplayName: function (val) {
+                if (val) {
+                    this.showName = val;
+                }
+            }
+        },
+        data() {
+            return {
+                showLov: false,
+                tableItems: [],
+                showNameValue: null,
+                rowValue: {},
+                searchText: null,
+                headerSelected: [],
+                showName: '点击选择',
+                meta: {
+                    rowIdName: "id",
+                    queryApi: this.api
+                },
+                lovFooter: {
+                    showFirstLastPage: true,
+                    "show-current-page": true,
+                    "items-per-page-options": [8],
+                    "items-per-page-text": "每页"
+                }
+            };
+        },
+        mixins: [ApmMinxins, QueryPageMinxins],
+        methods: {
+            okAction() {
+                this.showLov = false;
+            },
+            cancelAction() {
+                this.showLov = false;
+            },
+            queryLovData(api, param) {
+                param = param || {};
+                if (this.searchText) {
+                    param["text"] = this.searchText;
+                }
+                this.$request.request(api, param).then(response => {
+                    this.tableItems = response.table;
+                });
+            },
+            showLovDialog() {
+                this.showLov = true;
+                if (this.api) {
+                    this.queryLovData(this.api, this.params);
+                }
+            },
+            selectedRow(row) {
+                row["tag"] = this.tag;
+                this.rowValue = row;
+                this.showLov = false;
+                this.updateValue();
+            },
+            clearValue() {
+                this.rowValue = {tag: this.tag};
+                this.$emit("rowSelected", this.rowValue);
+                this.$emit("input", null);
+                 this.showName = '点击选择';
+            },
+            updateValue() {
+                this.$emit("rowSelected", this.rowValue);
+                this.$emit("input", this.rowValue[this.idAttr]);
+                 this.showName = this.rowValue[this.nameAttr];
+            }
+        }
+    };
+</script>
